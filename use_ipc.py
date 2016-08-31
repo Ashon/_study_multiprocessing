@@ -22,16 +22,20 @@ def is_prime(num):
 
 # define worker
 def check_prime_worker(possible_primes_queue, definite_primes_queue):
-    print("start worker")
+    # print("start worker")
+    # worker_id = int(random.random() * 10000)
+
     while True:
 
         # get recent message(or number) from queue
         n = possible_primes_queue.get()
 
+        # print("worker-%s: %s" % (worker_id, n))
+
         # if all finished stop this worker
         if n == FLAG_ALL_DONE:
             definite_primes_queue.put(FLAG_WORKER_FINISHED_PROCESSING)
-            print("quit worker")
+            # print("quit worker")
             break
 
         # else, find prime then put to queue.
@@ -44,7 +48,7 @@ def main():
 
     primes = []
 
-    NBR_PROCESSES = 1
+    NBR_PROCESSES = 4
 
     manager = multiprocessing.Manager()
 
@@ -57,7 +61,7 @@ def main():
 
     for _ in range(NBR_PROCESSES):
 
-        p = pool.Process(
+        p = multiprocessing.Process(
             target=check_prime_worker,
             args=(possible_primes_queue, definite_primes_queue)
         )
@@ -66,8 +70,8 @@ def main():
         p.start()
 
     t1 = time.time()
-    number_range = range(100000000, 101000000)
 
+    number_range = range(100000000, 101000000)
     # initialize possible prime queue
     for possible_prime in number_range:
         possible_primes_queue.put(possible_prime)
@@ -79,7 +83,10 @@ def main():
     processors_indicating_they_have_finished = 0
 
     while True:
-        new_result = definite_primes_queue.get() # block while waiting for results
+
+        # block while waiting for results
+        new_result = definite_primes_queue.get()
+
         if new_result == FLAG_WORKER_FINISHED_PROCESSING:
             processors_indicating_they_have_finished += 1
             if processors_indicating_they_have_finished == NBR_PROCESSES:
@@ -87,10 +94,11 @@ def main():
         else:
             primes.append(new_result)
 
+    # check all worker is killed
     assert processors_indicating_they_have_finished == NBR_PROCESSES
-    print("Took:", time.time() - t1)
 
-    print(len(primes), primes[:10], primes[-10:])
+    print "Took:", time.time() - t1
+    print len(primes), primes[:10], primes[-10:]
 
 
 if __name__ == '__main__':
